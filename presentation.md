@@ -10,9 +10,38 @@
 
 ### Das Framework (aus-)nutzen
 
+> Das Rad nicht neu erfinden, lieber radeln lernen.
+
 - Unser Projekt ist in der Aufgabenstellung ziemlich _straight forward_;
   (CRUD mit ein bisschen Businesslogik).
-- Das Rad nicht neu erfinden, lieber radeln lernen.
+
+- Spring Boot...
+    - erledigt eigentlich alle _Standardprobleme_, erfordert aber Einarbeitung.
+    - Hat eine klare Vorstellung, wie gute Software aussehen sollte
+        - Unit Tests
+        - ORM
+        - Zentrale Exceptionhandler
+    - erlaubt es nicht, direkt loszuprogrammieren, aber man programmiert
+      auch nicht Scheiße.
+    - tauscht den Schmerz des Refactorings gegen den der Einarbeitung.
+        - Hier tut's eher _am Anfang_ weh als _am Ende_.
+        - Ich les lieber manchmal spärliche Doku als Spaghetti-Code.
+
+### ScrumBut
+
+Sinngemäß nach [scrum.org](https://www.scrum.org/resources/what-scrumbut):
+
+Man sollte sich an's Framework halten, damit Probleme ans Tageslicht kommen.
+Bei ScrumBut kommt ein Problem zutage, ist aber nicht lösbar. Deshalb wird
+Scrum angepasst, so dass das Problem nicht gelöst, sondern nur unsichtbar wird.
+
+### ScrumBut
+
+| ScrumBut | Reason | Workaround |
+| -------- | ------ | ---------- |
+| Wir machen Scrum, ABER | wir arbeiten nicht täglich | deshalb sind die Dailys nicht _daily_. | 
+Wir machen Scrum, ABER | keiner Interessiert sich für unsere Software | daher liefern wir nichts. |
+Wir machen Scrum, ABER |  wir bekommen kein Feedback vom Kunden | daher Entwickeln wir das, was unser PO sich ausdenkt. |
 
 ### Der Github Workflow
 
@@ -31,7 +60,7 @@ Oder vielleicht eher:
     - Backend: Code von ~7
     - Frontend: Code von ~8
 
-## Verwendete Technologien 
+### Verwendete Technologien 
 
 Spring Boot
 
@@ -41,7 +70,7 @@ ORM
 Webserver
 :   (embedded) Tomcat
 
-## Teamstruktur (Mitglieder, Rollen, Zusammenarbeit) 
+### Teamstruktur (Mitglieder, Rollen, Zusammenarbeit) 
 
 - Statistiken ausm git
 
@@ -49,29 +78,31 @@ Webserver
 
 ### Semester 1
 
-- [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
-- https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/
+- Tutorial: _[Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/) (in 15 min.)_
+- [Spring Boot Referenz](https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/)
+
 - Addy: Server
 
 ### Semester 2
 
 - Weiteres Aufgleisen
+
 - ein, zwei Sprints vernünftig entwicklen
 
-## Challenges 
+### Challenges 
 
 - Security
     - Hohe Komplexität in der Umsetzung
 - JPA / Hibernate
     - Man läuft zwar mal in ihre Faust, aber sie liebt einen wirklich.
 
-## Highlights 
+### Highlights 
 
-## Fuckups 
+### Fuckups 
 
 - Simon's PR die nie Umgesetzt wurde
 - Member Kontaktdetails
 
-## Learnings (was nehmt Ihr für euch aus dem Projekt mit? Was bedeutet „agile“ für euch?)
+### Learnings (was nehmt Ihr für euch aus dem Projekt mit? Was bedeutet „agile“ für euch?)
 
 - First and foremost: Wir haben 'n vernünftiges Softwareprojekt gemacht.
