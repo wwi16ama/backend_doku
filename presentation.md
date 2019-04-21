@@ -1,5 +1,14 @@
 # Ideen für die Projekt-Präsentation
 
+## möglicher Spin
+
+### "Herausforderungen" chronologisch:
+
+- Zuerst mit sich selbst (Framework lernen, Aufgleisung)
+- Danach innerhalb des Teams (Im Team einen Sprint fertig bekommen)
+- Danach zwischen den Teams (Integration)
+- Inzwischen zwischen Teams und Kunden (Kein Feedback)
+
 ## Vorgehen
 
 ### KEIN [BDUF](https://en.wikipedia.org/wiki/BDUF)
@@ -41,7 +50,7 @@ Scrum angepasst, so dass das Problem nicht gelöst, sondern nur unsichtbar wird.
 | -------- | ------ | ---------- |
 | Wir machen Scrum, ABER | wir arbeiten nicht täglich | deshalb sind die Dailys nicht _daily_. | 
 Wir machen Scrum, ABER | keiner Interessiert sich für unsere Software | daher liefern wir nichts. |
-Wir machen Scrum, ABER |  wir bekommen kein Feedback vom Kunden | daher Entwickeln wir das, was unser PO sich ausdenkt. |
+Wir machen Scrum, ABER |  wir bekommen kein Feedback vom Kunden | daher entwickeln wir das, was unser PO sich ausdenkt. |
 
 ### Der Github Workflow
 
