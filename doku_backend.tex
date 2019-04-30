@@ -83,10 +83,11 @@ Tomcat-Appli\-ka\-tions\-server läuft. Die Applikation übernimmt unter anderem
 folgende Aufgaben:
 
 \begin{itemize}
-    \item Bereitstellen der Routen
-    \item Businesslogik
-    \item Authentifizierung und Authorisierung
+    \tightlist
+    \item Bereitstellen der API-Routen
+    \item Abbilden der Businesslogik
     \item Speichern in einer Datenbank
+    \item Authentifizierung und Authorisierung
 \end{itemize}
 
 \section{Einstieg in Spring Boot}
@@ -94,33 +95,34 @@ folgende Aufgaben:
 Die Entwicklung erfolgt mithilfe des Frameworks
 \href{https://en.wikipedia.org/wiki/Spring_Boot#Spring_Boot}{Spring Boot}. Das
 Framework bietet verschiedene Features, die die Entwicklung erleichtern oder
-strkturieren. Es ist zum Beispiel möglich, einen
+strukturieren. Es ist zum Beispiel möglich, einen
 \href{https://de.wikipedia.org/wiki/Objektrelationale_Abbildung}{objektrelationalen
 Mapper}
 zu nutzen, der den Datenbankzugriff stark abstrahiert. Auch das Bereitstellen
-des Web-Services wird durch Spring Boot vereinfacht. Zusätzlich hat das
+der API-Routen wird durch Spring Boot vereinfacht. Zusätzlich hat das
 Framework eine gewissen \emph{Meinung}, mit welchen Mustern entwickelt werden
-soll.
+soll, welches sehr hilfreich für uns unerfahrene Entwickler war.
 
-Zum Einstieg in das Backend-Projekt betrachten wir die Flugzeugverwaltung. Die
-findet im Paket \texttt{Plane} statt, in dem zwei Klassen und ein Interface
-definiert werden (vgl. Abbildung \ref{fig:planes_package}).
+Zum Einstieg in das Backend-Projekt und dem Kennenlernen der Spring Boot-Basics
+betrachten wir die Flugzeugverwaltung. Die findet im Paket \lstinline{Plane}
+statt, in dem zwei Klassen und ein Interface definiert werden (vgl. Abbildung
+\ref{fig:planes_package}).
 
 \begin{figure}[htpb]
     \centering
     \includegraphics{images/plane_package.png}
-    \caption{Inhalt des Package \texttt{Plane}}
+    \caption{Inhalt des Package \lstinline{Plane}}
     \label{fig:planes_package}
 \end{figure}
 
-Dabei ist die Klasse \texttt{Plane} das Business-Objekt, welches ein Flugzeug
-repräsentiert. Im \texttt{PlaneController} werden die Webservice-Routen und die
-Business-Logik definiert und das \texttt{PlaneRepository} abstrahiert das
-Speichern von \texttt{Plane}-Objekten in der Datenbank.
+Dabei ist die Klasse \lstinline{Plane} das Business-Objekt, welches ein Flugzeug
+repräsentiert. Im \lstinline{PlaneController} werden die Webservice-Routen und die
+Business-Logik definiert und das \lstinline{PlaneRepository} abstrahiert das
+Speichern von \lstinline{Plane}-Objekten in der Datenbank.
 
-Schauen wir uns nun zunächst einen Ausschnitt aus der \texttt{Plane}-Klasse an:
+Schauen wir uns nun zunächst einen Ausschnitt aus der \lstinline{Plane}-Klasse an:
 
-\begin{lstlisting}
+\begin{lstlisting}[caption=Entity-Klasse]
 @Entity
 public class Plane {
 
@@ -168,9 +170,8 @@ Applikation auch die Tabelle geändert. Durch diese Abstraktion wird ein
 hypothetisches Datenbank-Team in der Entwicklung unnötig, da nur noch zu
 Kontroll- und Test-Zwecken direkt auf die Datenbank zugegriffen wird.
 
-Der \texttt{PlaneController} enthält nun die Business-Logik:
 
-\begin{lstlisting}
+\begin{lstlisting}[caption=Ausschnitt eines REST-Controllers, label=lst_controller, float]
 @RestController
 @RequestMapping(path = "planes")
 public class PlaneController {
@@ -185,18 +186,19 @@ public class PlaneController {
 }
 \end{lstlisting}
 
-Hier ist die Definition der unter dem Pfad \url{<server>:<port>/planes/{id}}
-anzufindengen Methode gezeigt. Es wird in der URL also Parameter angegeben,
-welches Flugzeug angezeigt werden soll, woraufhin das Flugzeug in der Datenbank
-gesucht wird. Wird es gefunden, wird es zurückgegeben, wird kein Flugzeug
-gefunden, wird eine \lstinline{Exception} geworfen. Hierbei übernimmt Spring
-Boot, oder genauer, die Jackson-Bibliothek das \emph{Marshalling} und
-\emph{Unmarshalling}, also das Umwandeln von JSON zu einfachen Java-Objekten
-und umgekehrt. Außerdem gibt es eine Klasse, welche Exceptions fängt und
-daraufhin an den Client passende Fehlermeldungen zurücksendet.
+
+Der \texttt{PlaneController} enthält nun die Business-Logik.  In Listing
+\ref{lst_controller} wird die Definition der unter dem Pfad
+\url{<server>:<port>/planes/{id}} anzufindengen Methode gezeigt. Es wird in der
+URL also als Parameter angegeben, welches Flugzeug angezeigt werden soll, woraufhin
+das Flugzeug in der Datenbank gesucht wird. Wird es gefunden, wird es
+zurückgegeben, wird kein Flugzeug gefunden, wird eine \lstinline{Exception}
+geworfen. Hierbei übernimmt Spring Boot, oder genauer, die Bibliothek \emph{Jackson}
+das \emph{Marshalling} und \emph{Unmarshalling}, also das Umwandeln von JSON zu
+einfachen Java-Objekten und umgekehrt. 
 
 Dieser Dreiklang aus Business-Objekt, dazugehörigem Controller und Repository
-ist relativ typisch für das Projekt.
+ist relativ typisch für die meisten Business-Objekte im Projekt.
 
 \section{Die Business-Objekte und -Logik}
 
@@ -204,8 +206,8 @@ ist relativ typisch für das Projekt.
 
 Eine Übersicht über die Business-Objekte des Projekts kann das Diagramm in
 Abbildung \ref{fig:erm_all} geben. Es wurde aus den Datenbanktabellen
-generiert, welche wiederum \emph{Hibernate}, dem objekt-relationalen Mapper
-generiert wurden.
+generiert, welche wiederum mit \emph{Hibernate}, dem objekt-relationalen
+Mapper, generiert wurden.
 
 Relationen zwischen Objekten/Entitäten werden im Quellcode über Annotationen
 wie \lstinline{@OneToOne}, \lstinline{@OneToManty} und \lstinline{@ManyToMany}
@@ -242,12 +244,12 @@ private PilotLog pilotLog;
 \subsection{Vereinskonto}
 
 Während der Member ein schönes Beispiel ist, wie relativ typische Sachverhalte
-mit Hibernate umgesetzt werden können, ist das \emph{Vereinskonto} ein schönes
-Beispiel für Stellen, an denen wir etwas kreativer werden mussten im Umgang mit
+mit Hibernate umgesetzt werden können, ist das \emph{Vereinskonto} ein Beispiel
+für eine Stelle , an der wir etwas kreativer werden mussten im Umgang mit
 dieser Technologie.
 
-Die Mitglieder besitzen ein digitales Konto, in dem ihre Transaktionen - zum
-Beispiel das Zahlen der Mitgliedsgebühr und ihr Kontostand - verwaltet werden.
+Die Mitglieder besitzen ein Mitgliedskonto, in dem ihre Transaktionen, \emph{zum
+Beispiel das Zahlen der Mitgliedsgebühr und ihr Kontostand,} verwaltet werden.
 Auch der Verein hat so ein Konto. Hier wird es nun schwierig: Die
 Mitgliederkonten sind Objekte, die Mitgliedern zugeordnet sind. Wie also das
 Vereinskonto gestalten? Es wurden zwei Vorschläge diskutiert:
@@ -262,7 +264,7 @@ Vereinskonto gestalten? Es wurden zwei Vorschläge diskutiert:
 Die Umsetzung des Vereinskontos als Singleton, eine Klasse, von der immer
 maximal eine Instanz existiert, scheint logisch. Der zweite Vorschlag wurde
 formuliert, falls sich der erste als nicht umsetzbar erweist, mangelt aber der
-Eleganz des Ersten.
+Eleganz des ersten.
 
 Bei der Implementierung des Vereinskontos als Singleton gab es Hürden:
 
@@ -270,7 +272,8 @@ Das Konto sollte vom Mitgliedskonto erben, mit den zwei Unterschieden, dass es
 zum einen ein Singleton ist und zum anderen andere Transaktionen speichert. Das
 ganze lies sich implementieren, wenn auch mit einigem Aufwand und einem
 zwischenzeitlichen versteckten Bug, der eine halbe Woche später gefunden wurde
-und über einige Tage analysiert werden musste. 
+und über einige Tage aufwändig analysiert werden musste. Hier war
+\emph{Hibernate} an einigen Stellen eher eine Herausforderunge als eine Hilfe.
 
 \subsection{Transactions}
 
@@ -629,7 +632,12 @@ wurden.
 
 Als \emph{integrierte Entwicklungsumgebung} wurde IntelliJ IDEA genutzt.
 IntelliJ bietet etwas mehr Features als Eclipse und ist generell besser
-\emph{benutzbar}.
+\emph{benutzbar}, da z.~B. schneller.
+
+Besonders hilfreich war die eingebaute Git-Unterstützung, die bei
+Merge-Konflikten sehr hilfreich war. Auch die Möglichkeit, sehr einfach Dateien
+zu \emph{diffen}, also die Unterschiedlichen Versionen zu vergleichen, war sehr
+angenehm.
 
 \subsection{Datenbank}
 
@@ -644,8 +652,23 @@ zugegriffen wurde.
 \subsection{REST-Client}
 
 %% Postman, HTTPie
-Zum händischen Testen 
+Zum händischen Testen der definierten Routen wurden \emph{Postman} und
+\emph{HTTPie} genutzt. Es war wichtig, die Routen unabhängig vom Frontend selbst
+testen zu können, da die Entwicklung so weniger abhängig vom Fortschritt der
+Frontendentwicklung war. Dazu wurde insbesondere Postman genutzt. Mit diesem
+Tool können HTTP-Anfragen einfach über eine grafische Oberfläche durchgeführt
+werden.
+
+Einige nutzten hier stattdessen HTTPie, ein kommandozeilenbasiertes Tool,
+welches für schnelle unkomplizierte Abfragen etwas schlanker zu benutzen war.
 
 \subsection{ripgrep}
+
+Eine kurzer aber liebevoller Blick sei noch auf \emph{ripgrep} geworfen, ein
+kommandozeilenbasiertes Tool zum durchsuchen von Textdateien per regulären
+Ausdrücken \emph{(Regex)}, dass dem UNIX-Programm \emph{grep} ähnelt. Das Tool
+wurde zwar nur von einem Entwickler intensiv genutzt, erwies sich aber als
+wertvolle Hilfe, um z.~B. alle Vorkommen einer Methode oder einer Annotation im
+Projekt zu suchen. 
 
 \end{document}
