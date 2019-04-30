@@ -1,0 +1,228 @@
+
+
+
+
+
+ 
+ 
+1.05 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Technische Dokumentation des Gesamtprojekts 
+
+
+ 
+Matthis Gördel
+
+ 
+
+
+
+
+
+    Das MdWI-Projekt der Semester fünf und sechs wird als agiles
+    Softwareprojekt durchgeführt. Für die Umsetzung wurde die Entscheidung
+    getroffen, den Kurs in drei Teams aufzuteilen: Marketing,
+    Frontend und Backend. Hier wird die Motivation hinter dieser
+    Trennung, verbunden mit der technischen Architektur, beschrieben.
+
+Ausgangssituation
+
+Zu Beginn gab für die Umsetzung des Projekts zwei zentrale Fragen:
+
+
+    Wie soll die technische Architektur aussehen?
+    Wie organisieren wir uns als Kurs?
+
+Als Rahmen war gegeben, dass das Projekt per Scrum organisiert werden
+soll. Dies bringt einige Implikationen für die Entwicklung mit sich, da Scrum
+interdisziplinäre Entwicklerteams fordert, im Gegensatz zu z. B. einer
+Aufteilung in Entwicklungs-, Datenbank-, und Test-Team.
+
+Scrum fordert außerdem Teams von rund sieben Mitarbeitern. Den Kurs in drei
+Teams aufzuteilen, schien deshalb sinnvoll. Daraus ergab sich die Frage nach
+einer geeigneten technischen Architektur, bei der mehrere Entwicklerteams
+parallel an einem Produkt arbeiten können. Da eine Webapplikation entwickelt
+werden sollte, wurden zwei Optionen gesehen:
+
+
+    Die Umsetzung als Monolith.
+    Die Umsetzung als Single-Page-Anwendung mit getrenntem Front- und
+        Backend. 
+
+Eine Umsetzung als monolithische Applikation hätte zum Beispiel so
+aussehen können, dass zum Beispiel mit PHP und HTML oder einem Webframework mit
+HTML-Template-Engine von mehreren Teams eine einzige Applikation entwickelt
+wird.
+
+Die Alternative wäre, eine Single-Page-Anwendung mit Webservice-Backend
+zu entwickeln. Hier entwickelt ein Team eine Webanwendung, welche vom Endnutzer
+als ein einziges HTML-Dokument heruntergeladen wird, welches daraufhin
+anzuzeigende Inhalte dynamisch von einem Backend-Server abfragt, der von einem
+anderen Team entwickelt wird. Hier ist die Website eine Art Fat-Client,
+da die Website, die der Nutzer herunterlädt, viel mehr Logik enthält als die
+verschiedenen Webseiten, die eine monolithische Applikation generiert.
+
+
+        [htbp]lXX
+                [HTML]E0E0E0
+        & Monolith & Single-Page-Application
+        
+         Vorteile & 
+        [noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]
+            Alle arbeiten mit einer Sprache, einem Framework
+            Flexiblerer Einsatz der Entwickler
+                &
+        [noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]
+            Entkopplung in zwei Anwendungen: Frontend und Backend 
+            Zwei Teams können parallel arbeiten
+                
+         Nachteile   &
+        [noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]
+            Eventuell komplexer Spaghetti-Code
+            Schwierig, > 10 Entwickler parallel zu beschäftigen
+                &
+        [noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]
+            Herausforderung der Absprache zw. Front- und Backend
+            Abhängigkeiten
+                
+         Vor- und Nachteile der techn. Ansätze
+    
+Es wurde die Ansätze abgewogen (vgl. Tabelle ) und sich
+gegen den monolithischen Ansatz entschieden. Daraus resultierte nun endgültig
+die Teilung in Frontend und Backend (und Marketing).
+
+Single-Page-Anwendung, Frontend, Backend
+
+
+            Skizze des Ablaufs einer Single-Page-Webanwendung
+    
+Abbildung  zeigt die Funktionsweise einer
+Single-Page-Anwendung. Im ersten hervorgehobenen Rechteck wird das Laden der
+Anwendung dargestellt. Ein Anwender ruft zum Beispiel die Webseite der
+Projekt-Anwendung auf. Sein Browser schickt dann eine GET-Request nach der
+index.html, der zentralen HTML-Seite. Diese wird vom Webserver
+beantwortet. Nun hat der Anwender die Anwendung in den Speicher seines Browsers
+geladen. 
+
+Wenn nun der Anwender zum Beispiel seine Mitgliedsdaten sehen möchte, klickt er
+im Browser auf den entsprechenden Link. Es wird jedoch keine neue HTML-Seite
+aufgerufen und heruntergeladen, sondern die Webanwendung schickt stattdessen
+eine Anfrage an einen Webservice, das Backend. Dieser prüft dann zum
+Beispiel, ob die Anfrage berechtigt ist und greift auf die Datenbank zu um die
+angeforderten Daten zu lesen.
+
+Daraufhin schickt er die Daten an die Webanwendung, die im Browser des Nutzers
+läuft, zurück. Die Webanwendung aktualisiert nun das Document Object
+Model (DOM), passt also das HTML der Webseite an, um die neu empfangenen Daten
+anzuzeigen.
+
+Es ist also ein bisschen so, als ob der Nutzer beim Öffnen der Seite ein
+Programm herunterlädt und mit diesem interagiert. Das Programm wiederum greift
+auf einen Server zu, schickt und holt Daten. Schließt der Anwender das
+Browserfenster löscht/deinstalliert er das Programm sozusagen.
+
+Die Kommunikation zwischen der Anwendung im Browser und dem Webservice erfolgt
+über eine Webschnittstelle. Die Anwendung ruft also in gewisser Weise selbst
+Webseiten auf, wobei diese aber nicht für Menschen gedacht sind, sondern
+einfach nur Daten in einer relativ rohen Form enthalten.
+
+Die API-Spec
+
+Im Projekt erfolgt die Definition und Dokumentation dieser Web-Schnittstelle
+über die sogenannte https://wwi16ama.feste-ip.net/swagger/API-Spec.
+Hier werden die Routen, die die Frontend-Anwendung aufrufen kann, definiert.
+Genauso werden die eventuell notwendigen Parameter der Anfragen und die
+möglichen Ergebnisse beschrieben.  
+
+
+            Übersicht der möglichen Routen zu Accounts
+    
+Abbildung  zeigt einen Auszug aus der API-Spec. Hier
+wurden unter der Überschrift Accounts drei verschiedene Routen
+definiert, auf die jeweils mit verschiedenen HTTP-Methoden zugegriffen wird.
+Rechts steht eine Beschreibung, was mit dem Aufruf geschieht. Dies ist jedoch nur die Kompakt-Ansicht, die sich expandieren lässt.
+
+Ein Ausschnitt der expandierten Darstellung ist in Abbildung
+ zu sehen. Hier wird beschrieben, welche Parameter für
+die Anfrage notwendig sind. Das ist zum einen ein Parameter in der URL des
+Aufrufs, um anderen muss beim POST eine Art Anhang mitgeschickt
+werden, nämlich das Objekt im Request Body, welches den Betrag und den
+Transaktionstyp enthält.
+
+
+            Notwendige Parameter für das Hinzufügen einer Transaktion zu einem
+    Mitgliedskonto
+    
+Anhand dieser Definition wissen die Frontend-Entwickler, welche Anfragen sie
+stellen müssen und wie die Daten aufgebaut sind, die sie erhalten. Für die
+Backend-Entwicker gilt das gleiche, auch hier ist nun klar, welches Verhalten
+implementiert werden soll.
+
+Dabei ist nicht nur die geschriebene API-Spec ein wichtiges Dokument, auch der
+Prozess des Schreibens ist von hoher Bedeutung. Hierbei werden grundlegende
+Design-Entscheidungen getroffen und die Entwickler müssen sich bereits
+überlegen, welche logische Darstellung der Daten möglichst sinnvoll aber auch
+leicht zu implementieren ist.
+
+Im Idealfall wird bei der Entwicklung eines neuen Features zuerst die API-Spec
+von Front- und Backend-Entwickler gemeinsam definiert, danach jeweils
+implementiert und am Ende gemeinsam getestet.
+
+Die Plattform
+
+
+Während die API-Spec die Schnittstelle zwischen Frontend und Backend
+dokumentiert, wird der Quellcode auf der Plattform GitHub verwaltet.
+Frontend und Backend haben hier jeweils ein Repository des
+Versionsverwaltungssystems Git. Hier geschieht die Entwicklung
+weitesgehend unabhängig, ausgenommen einiger Fälle in dem ein Mitglied des
+einen Teams Issues im Repository des anderen Teams eröffnet, um z. B.
+Bugs zu dokumentieren.
+
+
+Um diese parallele Arbeit nun zusammenzuführen, also zu integrieren und
+um eine Instanz des aktuellen Entwicklungsstands der Applikation für den Kunden
+oder die POs zu haben, wird ein Integrationsserver betrieben.
+Auf diesem Server laufen das Frontend und das Backend.
+
+
+Dabei wird die Integrations-Software Jenkins benutzt. Jenkins prüft jede
+Minute, ob es Änderungen auf dem Haupt- und Testzweig der Git-Repositories von
+Frontend und Backend gibt. Wird eine Änderung gefunden, lädt Jenkins den
+neuesten Quellcode, baut eine lauffähige Anwendung (kompilieren,
+durchführen von Unit-Tests, verpacken zu bereitstellbaren Dateien) und liefert
+diese dann an den jeweiligen Server. Dass Backend läuft auf einem
+Tomcat-Applikationsserver, dass Frontend wird von einem
+nginx-Webserver. Es laufen zwei Instanzen der App, Test und Master.
+
+
+Für das fünfte Semester wurde als Server ein Raspberry Pi-Bastelcomputer
+mit Linux-Betriebssystem genutzt. Der Pi hat einen relativ schwachen
+Prozessor und kleinen Arbeitsspeicher, was dazu führte, dass es nicht möglich
+war, dass Frontend auf dem Pi zu bauen, da dieser dabei abstürzte. Es
+wurde stattdessen das Frontend bereits gebaut händisch bereitgestellt.
+
+
+Zu Beginn des sechsten Semesters wurde der von Prof. Dr. Engel bereitgestellte
+Server in Betrieb genommen, der deutlich leistungsfähiger ist. Dadurch war es
+nun auch möglich, dass Frontend komplett automatisiert bereitzustellen. 
+

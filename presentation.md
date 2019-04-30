@@ -49,8 +49,8 @@ Scrum angepasst, so dass das Problem nicht gelöst, sondern nur unsichtbar wird.
 | ScrumBut | Reason | Workaround |
 | -------- | ------ | ---------- |
 | Wir machen Scrum, ABER | wir arbeiten nicht täglich | deshalb sind die Dailys nicht _daily_. | 
-Wir machen Scrum, ABER | keiner Interessiert sich für unsere Software | daher liefern wir nichts. |
-Wir machen Scrum, ABER |  wir bekommen kein Feedback vom Kunden | daher entwickeln wir das, was unser PO sich ausdenkt. |
+| Wir machen Scrum, ABER | keiner Interessiert sich für unsere Software | daher liefern wir nichts. |
+| Wir machen Scrum, ABER |  wir bekommen kein Feedback vom Kunden | daher entwickeln wir das, was unser PO sich ausdenkt. |
 
 ### Der Github Workflow
 
