@@ -42,7 +42,8 @@
   commentstyle=\color{pgreen},
   keywordstyle=\color{pblue},
   stringstyle=\color{pred},
-  basicstyle=\ttfamily,
+  basicstyle=\footnotesize\ttfamily,
+  tabsize=2,
   moredelim=[il][\textcolor{pgrey}]{$$},
   moredelim=[is][\textcolor{pgrey}]{\%\%}{\%\%}
 }
@@ -157,7 +158,7 @@ Vorteil, da so eine Änderung in der Java-Klasse automatisch im Datenbankschema
 
 \begin{figure}[htpb]
     \centering
-    \includegraphics[width=0.4\textwidth]{images/erm/plane.png}
+    \includegraphics[width=0.4\textwidth]{images/erm/plane1.png}
     \caption{Generierte Tabelle, die \texttt{Plane}-Objekte speichert}
     \label{fig:plane_table}
 \end{figure}
@@ -193,16 +194,16 @@ Der \texttt{PlaneController} enthält nun die Business-Logik.  In Listing
 URL also als Parameter angegeben, welches Flugzeug angezeigt werden soll, woraufhin
 das Flugzeug in der Datenbank gesucht wird. Wird es gefunden, wird es
 zurückgegeben, wird kein Flugzeug gefunden, wird eine \lstinline{Exception}
-geworfen. Hierbei übernimmt Spring Boot, oder genauer, die Bibliothek \emph{Jackson}
-das \emph{Marshalling} und \emph{Unmarshalling}, also das Umwandeln von JSON zu
-einfachen Java-Objekten und umgekehrt. 
+geworfen. Hierbei übernimmt Spring Boot, oder genauer, die Bibliothek
+\emph{Jackson}, das \emph{Marshalling} und \emph{Unmarshalling}, also das
+Umwandeln von JSON zu einfachen Java-Objekten und umgekehrt. 
 
 Dieser Dreiklang aus Business-Objekt, dazugehörigem Controller und Repository
 ist relativ typisch für die meisten Business-Objekte im Projekt.
 
 \section{Die Business-Objekte und -Logik}
 
-\subsection{Relationen mit Hibernate}
+\subsection{Relationen mit \emph{Hibernate}}
 
 Eine Übersicht über die Business-Objekte des Projekts kann das Diagramm in
 Abbildung \ref{fig:erm_all} geben. Es wurde aus den Datenbanktabellen
@@ -236,7 +237,7 @@ private PilotLog pilotLog;
 
 \begin{figure}[htpb]
     \centering
-    \includegraphics[width=\textwidth]{images/erm/all_orthogonal.png}
+    \includegraphics[width=\textwidth]{images/erm/all.png}
     \caption{Diagramm des Datenbanktabellen}
     \label{fig:erm_all}
 \end{figure}
@@ -244,7 +245,7 @@ private PilotLog pilotLog;
 \subsection{Vereinskonto}
 
 Während der Member ein schönes Beispiel ist, wie relativ typische Sachverhalte
-mit Hibernate umgesetzt werden können, ist das \emph{Vereinskonto} ein Beispiel
+mit \emph{Hibernate} umgesetzt werden können, ist das \emph{Vereinskonto} ein Beispiel
 für eine Stelle , an der wir etwas kreativer werden mussten im Umgang mit
 dieser Technologie.
 
@@ -266,27 +267,50 @@ maximal eine Instanz existiert, scheint logisch. Der zweite Vorschlag wurde
 formuliert, falls sich der erste als nicht umsetzbar erweist, mangelt aber der
 Eleganz des ersten.
 
-Bei der Implementierung des Vereinskontos als Singleton gab es Hürden:
+Bei der Implementierung des Vereinskontos als Singleton gab es Hürden: Die
+Methode, die statt dem Kunstruktor implementiert wird, um eine Referenz auf das
+Singleton zu erhalten (\lstinline{getInstance}-Methode), muss nun auch dafür Sorge tragen, dass die Instanz aus
+der Datenbank aktualisiert wird.
 
-Das Konto sollte vom Mitgliedskonto erben, mit den zwei Unterschieden, dass es
-zum einen ein Singleton ist und zum anderen andere Transaktionen speichert. Das
-ganze lies sich implementieren, wenn auch mit einigem Aufwand und einem
+\begin{lstlisting}[caption=\texttt{getInstance}-Methode des Vereinskonto-Singletons, label=lst_single]
+public static VereinsAccount getInstance(AccountRepository accountRepository) {
+    if (instance == null) {
+        instance = new VereinsAccount();
+        instance.setBalance(25000.0);
+        accountRepository.save(instance);
+    }
+    return (VereinsAccount) accountRepository.findById(instance.getId())
+            .orElseThrow(() -> new IllegalStateException("VereinsAccount nicht richtig gespeichert"));
+}
+\end{lstlisting}
+
+Das ganze lies sich implementieren, wenn auch mit einigem Aufwand und einem
 zwischenzeitlichen versteckten Bug, der eine halbe Woche später gefunden wurde
-und über einige Tage aufwändig analysiert werden musste. Hier war
-\emph{Hibernate} an einigen Stellen eher eine Herausforderunge als eine Hilfe.
+und über einige Tage aufwändig analysiert werden musste. Listing
+\ref{lst_single} zeigt die inzwischen fehlerfreie Methode. Der Code ist
+deutlich komplexer als eine \emph{typische} \lstinline{getInstance}-Methode.
+Dies liegt aber weniger an \emph{Hibernate} als an der grundlegenden Herausforderung,
+ein Singleton zu persistieren. Bei der Implementierung hat sich gezeigt, dass
+es manchmal durchaus nötig ist, die von \emph{Hibernate} verborgene Komplexität
+zu kennen und zu verstehen. Dies kann einige Zeit kosten. Es herrscht aber die
+Einschätzung, dass es in unserem Fall trotzdem definitiv eine gute Entscheidung
+war, \emph{Hibernate} intensiv zu nutzen. \emph{Hibernate} erspart in den häufig
+\emph{Standardfällen} viel Mühe und ist in den ein, zwei komplexeren Fällen
+durchschaubar genug, um auch diese mit der Technologie abzubilden.
 
 \subsection{Transactions}
 
 In den Konten werden verschiedene Transaktionen gespeichert. Grundsätzlich gibt es aus Vereinssicht zwei Typen von Transaktionen:
 
 \begin{itemize}
-    \item Einem Mitgliedskonto wird Geld hinzugefügt oder abgezogen. \emph{externe Transaktion}
-    \item Es wird Geld zwischen dem Vereinskonto und einem Mitgliedskonto überwiese. \emph{interne Transaktion}
+    \item Einem Mitgliedskonto wird Geld hinzugefügt oder abgezogen. \emph{(externe Transaktion)}
+    \item Es wird Geld zwischen dem Vereinskonto und einem Mitgliedskonto überwiese. \emph{(interne Transaktion)}
 \end{itemize}
 
 \emph{Externe Transaktionen} werden als solche bezeichnet, weil Geld \emph{von
-außen kommt} respektive \emph{abfließt}, während bei \emph{internen} Geld
-innerhalb des Vereins bewegt wird.
+außen kommt} respektive \emph{abfließt}, während bei \emph{internen
+Transaktionen} Geld innerhalb des Vereins bewegt wird. Es ist nicht vorgesehen,
+dass direkt zwischen zwei Mitgliedern Geld überwiesen werden kann.
 
 Auch hier wurden zwei verschiedene Implementierungen vorgeschlagen:
 
@@ -296,13 +320,33 @@ In der Ursprünglichen ist eine Transaktion einem Konto zugeordnet und
 beschreibt eine positive oder negative Wertänderung. Dies wurde
 zwischenzeitlich kritisch gesehen und es wurde überlegt, stattdessen eine
 Transaktion immer als Geldfluß zwischen zwei Konten abzubilden. Es wurde der
-Vorteil hierbei gesehen, dass \emph{interne Transaktionen} so leicher abbildbar
-sind. Tatsächlich erwies sich der Ansatz als schwierig zu implementieren, daher
-wurde auf den ersten zurückgewechselt und dieser erweitert. \emph{Externe
-Transaktionen} werden als eine Transaktion im Mitgliedskonto implementiert, bei
-\emph{internen Transaktionen} werden zwei Transaktionen gespeichert: eine im
-Mitgliedskonto und eine Vereinskonto-Transaktion im Vereinskonto. Diese enthält
-zusätzlich die ID des Mitglieds, welches an der Transaktion beteiligt ist.
+Vorteil hierbei gesehen, dass \emph{interne Transaktionen} so leichter korrekt
+abbildbar sind. Tatsächlich erwies sich der Ansatz als schwierig zu
+implementieren, daher wurde auf den ersten zurückgewechselt und dieser
+erweitert. \emph{Externe Transaktionen} werden als eine Transaktion im
+Mitgliedskonto implementiert, bei \emph{internen Transaktionen} werden zwei
+Transaktionen gespeichert: eine im Mitgliedskonto und eine
+Vereinskonto-Transaktion im Vereinskonto. Diese enthält zusätzlich die ID des
+Mitglieds, welches an der Transaktion beteiligt ist. Abbildung
+\ref{fig:transaction_table} zeigt ausschnittsweise eine \emph{interne
+Transaktion} in der Datenbank. Die beiden gezeigten Einträge bilden diese ab.
+Die Fremdschlüssel der Einträge sind in Abbildung
+\ref{fig:transaction_table_1} zu sehen. Die \emph{normale} Transaction ist so
+dem Mitglied zugeordnet. Die Vereinskonto-Transaktion hingegen hat zwei
+Fremdschlüssel, so dass nachvollzogen werden kann, zwischen welchem
+Mitgliedskonto und dem Vereinskonto überwiesen wurde.
+
+\begin{figure}[htpb]
+    \centering
+    \includegraphics[width=\textwidth]{images/transaction_table.png}
+    \caption{Ausschnitt der Tabelle der Transaktionen.}
+    \label{fig:transaction_table}
+    \vspace{0.5cm}
+    \includegraphics[width=\textwidth]{images/transaction_table_1.png}
+    \caption{Ausschnitt der Tabelle der Transaktionen, hier mit den Konto-Fremdschlüsseln.}
+    \label{fig:transaction_table_1}
+\end{figure}
+
 
 \subsection{Events}
 
@@ -314,15 +358,15 @@ Elemente:
 
 \begin{description}
 \tightlist
-\item[Event] bündelt alle notwendigen Informationen.
-\item[Eventpublisher] \emph{Veröffentlicht} Events, generisch
-\item[Eventlistener] Verarbeitet Events, enthält Großteil der Logik
+\item[Event] Objekt, das alle notwendigen Informationen bündelt.
+\item[Eventpublisher] \emph{veröffentlicht} Events, generisch
+\item[Eventlistener] verarbeitet Events, enthält Großteil der Logik
 \end{description}
 
 % Transactions
 Betrachten wir dies am Beispiel der externen Transaktionen:
 
-\begin{lstlisting}[caption={Ausschnitt aus AccountController, in dem Event veröffentlicht wird},label=lst_evpub]
+\begin{lstlisting}[caption={Ausschnitt aus dem \lstinline{AccountController}, in dem ein Event veröffentlicht wird},label=lst_evpub, float]
 @PostMapping(path = "/{id}/transactions")
 public Transaction addTransaction(@RequestBody Transaction transaction, @PathVariable int id) {
     Account acc = accountRepository.findById(id)
@@ -332,12 +376,12 @@ public Transaction addTransaction(@RequestBody Transaction transaction, @PathVar
 }
 \end{lstlisting}
 
-Listing \ref{lst_evpub} zeigt einen Teil des AccountControllers. Wird im
+Listing \ref{lst_evpub} zeigt einen Teil des \lstinline{AccountController}. Wird im
 Frontend befohlen einem Mitglied Geld zum Konto hinzuzufügen, schickt dieses
 das entstehende Transaktionsobjekt und die Id des betroffenen Kontos. Daraufhin
 wird ein Event veröffentlichlicht.
 
-Dieses Event wird im Eventlistener verarbeitet:
+Dieses Event wird im Eventlistener verarbeitet (Listing \ref{lst_TEL}).
 
 \begin{lstlisting}[caption=Eventlistener für externe Transaktionen,label=lst_TEL]
 @EventListener
@@ -398,7 +442,7 @@ In einigen Fällen sollen Mails an Mitglieder des Vereins geschickt werden. Dies
 geschieht wieder per Events. Es gibt ein \lstinline{EmailNotificationEvent} und
 einen dazugehörigen Eventlistener. Versendet wird die Mail durch eine vom
 Spring-Framework bereitgestellte Mail-Sender-Klasse. Das HTML, was den
-Mailinhalt ausmacht wird vorher mit der Templating-Engine \emph{Thymeleaf}
+Mailinhalt ausmacht, wird vorher mit der Templating-Engine \emph{Thymeleaf}
 generiert. Diese hätte theoretisch auch genutzt werden können, um HTML für die
 Vereinswebseite zu generieren. Dann gäbe es kein separates Frontend sondern das
 Backend würde das HTML dynamisch generieren.
@@ -433,7 +477,7 @@ geschehen soll.
 
 Da das Backend per HTTP mit dem Frontend kommuniziert, müssen Fehler über
 dieses Protokoll ans Frontend vermittelt werden. Dazu gibt es unter anderem die
-HTTP-Statuscodes, von denen die \lstinline{404 - Not found} wohl am
+HTTP-Statuscodes, von denen der Code \lstinline{404 - Not found} wohl am
 bekanntesten ist. Der ControllerAdvice nimmt nun den relevanten Text aus den
 Exceptions und sendet ihn mit dem passenden HTTP-Statuscode ans Frontend
 zurück. Listing \ref{lst_exc} zeigt den Teil des ControllerAdvice, in dem die
@@ -462,16 +506,17 @@ Frontend ans Backend authentifiziert werden. Es gibt für die Sicherung von
 REST-Services verschiedene Möglichkeiten, zum Beispiel \emph{JSON Web Tokens
 (JWT)}, welches eine in der Praxis weit verbreitete Methode ist.
 
-Es wurde sich jedoch gegen ein \emph{komplexeres} Verfahren entschieden sondern
-die Authentifizierung so simpel wie gerade noch sicher gestaltet. Als
-Authentifizierungsmethode wird die \emph{HTTP-Basic}-Authentifizierung genutzt,
-bei der Nutzername und Passwort Base64-kodiert, also fast im Klartext, mit
-jeder Request im Authentifizierungsheader der Request übertragen werden. Diese
-Methode ist nur sicher, solange mit dem Server über HTTPS kommuniziert wird,
-damit ein Dritter nicht einfach die Zugangsdaten ablauschen kann. Der Server,
-auf dem die Applikation über den Verlauf des Projekts gehostet wurde, hat das
-für HTTPS nötige TLS-Zertifikat und erlaubt nur Kommunikation über HTTPS, daher
-ist die Methode als sicher anzusehen.
+Es wurde sich jedoch gegen ein \emph{komplexeres} Verfahren entschieden.
+Stattdessen wurde die  die Authentifizierung so simpel wie gerade noch sicher
+gestaltet. Als Authentifizierungsmethode wird die
+\emph{HTTP-Basic}-Au\-then\-ti\-fi\-zie\-rung genutzt, bei der Nutzername und Passwort
+\emph{Base64}-kodiert, also fast im Klartext, mit jeder Request im
+Authentifizierungsheader der Request übertragen werden. Diese Methode ist nur
+sicher, solange mit dem Server über HTTPS kommuniziert wird, damit ein Dritter
+nicht einfach die Zugangsdaten abhören kann, wenn er den Netzwerkverkehr überwacht. Der Server, auf dem die
+Applikation über den Verlauf des Projekts gehostet wurde, hat das für HTTPS
+nötige TLS-Zertifikat und erlaubt nur Kommunikation über HTTPS, daher ist die
+Methode als sicher anzusehen.
 
 Die Implementierung der Authentifizierung erfolgte mittels \emph{Spring
 Security}. Hier wird wieder viel abstrahiert. Spring Security stellt das
@@ -481,16 +526,16 @@ Implementierungsdetails verbirgt. Im Projekt wird nur eine Methode
 abhängig vom Username lädt.
 
 In einer zentralen Konfigurations-Klasse ist dann definiert, dass alle Requests
-authorisiert sein müssen und dass BCrypt zum hashen der Passwörter verwendet
+authorisiert sein müssen und dass der Algorithmus \emph{BCrypt} zum hashen der Passwörter verwendet
 wird.
 
 \subsection{Authorisierung}
 
 Bei der Authorisierung wird ebenfalls viel von Spring Security erledigt. Es
 wird eine Methode überschrieben, die definiert, wie die Rollen, die ein
-Mitglied hat. Listing \ref{lst_autho} zeigt einen Ausschnitt der Methode, bei
-der anhand der \emph{Offices} (Ämter) des Mitglieds die Berechtigungen (Rollen)
-bestimmt werden.
+Mitglied hat, ermittelt werden. Listing \ref{lst_autho} zeigt einen Ausschnitt
+der Methode, bei der anhand der \emph{Offices} (Ämter) des Mitglieds die
+Berechtigungen (Rollen) bestimmt werden.
 
 \begin{lstlisting}[caption=Bestimmung der Rollen anhand der Ämter, label=lst_autho]
 Collection<SimpleGrantedAuthority> authorities = getOffices()
@@ -500,15 +545,18 @@ Collection<SimpleGrantedAuthority> authorities = getOffices()
 \end{lstlisting}
 
 In den Controllern wird dann geprüft, ob ein Mitglied die benötigten Rechte
-hat. In Listing \ref{lst_autho_meth} wird geprüft, ob das Mitglied ein aktives
+für den Aufruf der Route hat. In Listing \ref{lst_autho_meth} wird geprüft, ob das Mitglied ein aktives
 Mitglied ist (\lstinline{hasRole('ACTIVE')} und ob es auch sein eigenes Logbuch
-bearbeitet (\lstinline{#memberId} ist der Parameter in der Request, der angibt,
+bearbeitet. \lstinline{#memberId} ist der Parameter in der Request, der angibt,
 wessen Logbuch bearbeitet werden soll, \lstinline{principal.id} ist die Id des
-Mitglieds, welches die Request durchführt.
+Mitglieds, welches die Request durchführt. Diese Bedingungen werden in der
+\lstinline{@PreAuthorize}-Annotation oberhalb der Methodendefinition für die zu
+schützende Route angegeben.
 
 \begin{lstlisting}[caption=Beispiel Berechtigungsprüfung, label=lst_autho_meth]
 @PreAuthorize("hasRole('ACTIVE') and #memberId == principal.id")
 @PostMapping(path = "/{memberId}/pilotlogentry")
+public PilotLogEntry addPilotLogEntry(@RequestBody PilotLogEntry pilotLogEntry, @PathVariable int memberId) { ... }
 \end{lstlisting}
 
 \section{Unit-Testing}
@@ -523,7 +571,7 @@ Es soll möglich sein, zu speichern, dass ein Mitglied im aktuellen Jahr als
 Fluglehrer tätig war. Es soll aber nicht möglich sein, dies noch ein zweites
 mal für das selbe Jahr zu speichern.
 
-Mit dem \lstinline{mockMvc} werden die Requests durchgeführt und es wird
+Mit dem \lstinline{mockMvc} werden Requests durchgeführt und es wird
 geprüft, dass der richtige HTTP-Statuscode zurückgegeben wird. Beim ersten Mal
 wird ein erfolgreiches Speichern erwartet, welches durch den Code
 \lstinline{204 - No Content} symbolisiert wird. Bei der zweiten Anfrage wird
@@ -531,7 +579,7 @@ erwartet, dass das Backend die fehlerhafte Anfrage vom Client mit dem
 Statuscode \lstinline{400 - Bad Request} abweist.
 
 
-\begin{lstlisting}[caption=Beispielhafter Unit-Test, label=lst_test]
+\begin{lstlisting}[caption=Beispielhafter Unit-Test, label=lst_test, float]
 @Test
 @WithMockUser(roles = {"SYSTEMADMINISTRATOR"})
 public void testJaehrlicherServiceDoppelt() throws Exception {
@@ -562,15 +610,15 @@ der eigentliche Applikation, stattdessen musste diese Marshalling-Methode
 implementiert werden.
 
 Besonders nervig war, dass Datums-Objekte explizit definierte
-Serializier-Klassen benötigten. Diese geben z.~B. an, dass ein Datumsobjekt in
-das Format \lstinline{YYYY-MM-DD hh:mm:ss} umgewandelt werden soll. Dies war
+Serialisierungs-Klassen benötigten. Diese geben z.~B. an, dass ein Datumsobjekt
+in das Format \lstinline{YYYY-MM-DD hh:mm:ss} umgewandelt werden soll. Dies war
 relativ Aufwändig, hat aber auf der anderen Seite Einblicke in die
 Funktionsweise der Jackson-Bibliothek, die Spring für JSON-Serialisierung
 nutzt, gegeben.
 
 \section{Tooling}
 
-Neben der \emph{Werk} - dem Quellcode - sei auch ein Blick auf die
+Neben dem \emph{Werk}, dem Quellcode, sei auch ein Blick auf die
 \emph{Werkzeuge} geworfen. Im Folgenden soll kurz beschrieben werden, welche
 Entwicklungs- und Kollaborationstools hilfreich waren und welche Rolle diese
 spielten.
@@ -621,8 +669,8 @@ Ebenfalls sehr praktisch war der Discord-Bot, der in verschiedenen Kanälen alle
 
 Discord wurde als zentrale Chat-Plattform genutzt, zum einen, da es die
 Möglichkeit gibt, auf einem Server verschiedene Räume für verschiedene Gruppen
-zu gestalten und zum anderen, weil einige Teilnehmer Discord bereits beim
-Gaming verwenden.
+zu gestalten und zum anderen, weil einige Teilnehmer Discord bereits privat  
+verwenden.
 
 Die Kommunikation über Discord ist insgesamt als positiv zu bewerten, auch wenn
 einige Teilnehmer schlecht erreichbar waren oder manche Nachrichten überlesen
@@ -646,8 +694,8 @@ Bei der Datenbank für die lokale Entwicklung gab es verschiedene Ansätze.
 Einige Entwickler haben die von Spring automatisch konfigurierte H2-Datenbank
 genutzt, die den geringsten (keinen) Einrichtungsaufwand hat. Die Entwickler
 mit etwas größerem Interesse an den Ereignissen innerhalb der Datenbank nutzten
-lokale MySQL-Instanzen, auf die per HeidiSQL, DBeaver oder per Kommandozeile
-zugegriffen wurde.
+lokale MySQL/MariaDB-Instanzen, auf die per HeidiSQL, DBeaver oder per
+Kommandozeile zugegriffen wurde.
 
 \subsection{REST-Client}
 

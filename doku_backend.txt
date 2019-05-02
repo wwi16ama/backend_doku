@@ -25,6 +25,7 @@ language=Java,
   keywordstyle=,
   stringstyle=,
   basicstyle=,
+  tabsize=2,
   moredelim=[il][,
   moredelim=[is][
 
@@ -154,9 +155,9 @@ Der PlaneController enthält nun die Business-Logik.  In Listing
 URL also als Parameter angegeben, welches Flugzeug angezeigt werden soll, woraufhin
 das Flugzeug in der Datenbank gesucht wird. Wird es gefunden, wird es
 zurückgegeben, wird kein Flugzeug gefunden, wird eine Exception
-geworfen. Hierbei übernimmt Spring Boot, oder genauer, die Bibliothek Jackson
-das Marshalling und Unmarshalling, also das Umwandeln von JSON zu
-einfachen Java-Objekten und umgekehrt. 
+geworfen. Hierbei übernimmt Spring Boot, oder genauer, die Bibliothek
+Jackson, das Marshalling und Unmarshalling, also das
+Umwandeln von JSON zu einfachen Java-Objekten und umgekehrt. 
 
 Dieser Dreiklang aus Business-Objekt, dazugehörigem Controller und Repository
 ist relativ typisch für die meisten Business-Objekte im Projekt.
@@ -221,26 +222,48 @@ maximal eine Instanz existiert, scheint logisch. Der zweite Vorschlag wurde
 formuliert, falls sich der erste als nicht umsetzbar erweist, mangelt aber der
 Eleganz des ersten.
 
-Bei der Implementierung des Vereinskontos als Singleton gab es Hürden:
+Bei der Implementierung des Vereinskontos als Singleton gab es Hürden: Die
+Methode, die statt dem Kunstruktor implementiert wird, um eine Referenz auf das
+Singleton zu erhalten (getInstance-Methode), muss nun auch dafür Sorge tragen, dass die Instanz aus
+der Datenbank aktualisiert wird.
 
-Das Konto sollte vom Mitgliedskonto erben, mit den zwei Unterschieden, dass es
-zum einen ein Singleton ist und zum anderen andere Transaktionen speichert. Das
-ganze lies sich implementieren, wenn auch mit einigem Aufwand und einem
+[caption=getInstance-Methode des Vereinskonto-Singletons, label=lst_single]
+public static VereinsAccount getInstance(AccountRepository accountRepository) 
+    if (instance == null) 
+        instance = new VereinsAccount();
+        instance.setBalance(25000.0);
+        accountRepository.save(instance);
+    
+    return (VereinsAccount) accountRepository.findById(instance.getId())
+            .orElseThrow(() -> new IllegalStateException("VereinsAccount nicht richtig gespeichert"));
+
+
+Das ganze lies sich implementieren, wenn auch mit einigem Aufwand und einem
 zwischenzeitlichen versteckten Bug, der eine halbe Woche später gefunden wurde
-und über einige Tage aufwändig analysiert werden musste. Hier war
-Hibernate an einigen Stellen eher eine Herausforderunge als eine Hilfe.
+und über einige Tage aufwändig analysiert werden musste. Listing
+ zeigt die inzwischen fehlerfreie Methode. Der Code ist
+deutlich komplexer als eine typische getInstance-Methode.
+Dies liegt aber weniger an Hibernate als an der grundlegenden Herausforderung,
+ein Singleton zu persistieren. Bei der Implementierung hat sich gezeigt, dass
+es manchmal durchaus nötig ist, die von Hibernate verborgene Komplexität
+zu kennen und zu verstehen. Dies kann einige Zeit kosten. Es herrscht aber die
+Einschätzung, dass es in unserem Fall trotzdem definitiv eine gute Entscheidung
+war, Hibernate intensiv zu nutzen. Hibernate erspart in den häufig
+Standardfällen viel Mühe und ist in den ein, zwei komplexeren Fällen
+durchschaubar genug, um auch diese mit der Technologie abzubilden.
 
 Transactions
 
 In den Konten werden verschiedene Transaktionen gespeichert. Grundsätzlich gibt es aus Vereinssicht zwei Typen von Transaktionen:
 
 
-    Einem Mitgliedskonto wird Geld hinzugefügt oder abgezogen. externe Transaktion
-    Es wird Geld zwischen dem Vereinskonto und einem Mitgliedskonto überwiese. interne Transaktion
+    Einem Mitgliedskonto wird Geld hinzugefügt oder abgezogen. (externe Transaktion)
+    Es wird Geld zwischen dem Vereinskonto und einem Mitgliedskonto überwiese. (interne Transaktion)
 
 Externe Transaktionen werden als solche bezeichnet, weil Geld von
-außen kommt respektive abfließt, während bei internen Geld
-innerhalb des Vereins bewegt wird.
+außen kommt respektive abfließt, während bei internen
+Transaktionen Geld innerhalb des Vereins bewegt wird. Es ist nicht vorgesehen,
+dass direkt zwischen zwei Mitgliedern Geld überwiesen werden kann.
 
 Auch hier wurden zwei verschiedene Implementierungen vorgeschlagen:
 
@@ -250,13 +273,27 @@ In der Ursprünglichen ist eine Transaktion einem Konto zugeordnet und
 beschreibt eine positive oder negative Wertänderung. Dies wurde
 zwischenzeitlich kritisch gesehen und es wurde überlegt, stattdessen eine
 Transaktion immer als Geldfluß zwischen zwei Konten abzubilden. Es wurde der
-Vorteil hierbei gesehen, dass interne Transaktionen so leicher abbildbar
-sind. Tatsächlich erwies sich der Ansatz als schwierig zu implementieren, daher
-wurde auf den ersten zurückgewechselt und dieser erweitert. Externe
-Transaktionen werden als eine Transaktion im Mitgliedskonto implementiert, bei
-internen Transaktionen werden zwei Transaktionen gespeichert: eine im
-Mitgliedskonto und eine Vereinskonto-Transaktion im Vereinskonto. Diese enthält
-zusätzlich die ID des Mitglieds, welches an der Transaktion beteiligt ist.
+Vorteil hierbei gesehen, dass interne Transaktionen so leichter korrekt
+abbildbar sind. Tatsächlich erwies sich der Ansatz als schwierig zu
+implementieren, daher wurde auf den ersten zurückgewechselt und dieser
+erweitert. Externe Transaktionen werden als eine Transaktion im
+Mitgliedskonto implementiert, bei internen Transaktionen werden zwei
+Transaktionen gespeichert: eine im Mitgliedskonto und eine
+Vereinskonto-Transaktion im Vereinskonto. Diese enthält zusätzlich die ID des
+Mitglieds, welches an der Transaktion beteiligt ist. Abbildung
+ zeigt ausschnittsweise eine interne
+Transaktion in der Datenbank. Die beiden gezeigten Einträge bilden diese ab.
+Die Fremdschlüssel der Einträge sind in Abbildung
+ zu sehen. Die normale Transaction ist so
+dem Mitglied zugeordnet. Die Vereinskonto-Transaktion hingegen hat zwei
+Fremdschlüssel, so dass nachvollzogen werden kann, zwischen welchem
+Mitgliedskonto und dem Vereinskonto überwiesen wurde.
+
+
+            Ausschnitt der Tabelle der Transaktionen.
+        
+        Ausschnitt der Tabelle der Transaktionen, hier mit den Konto-Fremdschlüsseln.
+    
 
 Events
 
@@ -267,14 +304,14 @@ einer Implementierung der Businesslogik per Events gibt es drei zentrale
 Elemente:
 
 
-[Event] bündelt alle notwendigen Informationen.
-[Eventpublisher] Veröffentlicht Events, generisch
-[Eventlistener] Verarbeitet Events, enthält Großteil der Logik
+[Event] Objekt, das alle notwendigen Informationen bündelt.
+[Eventpublisher] veröffentlicht Events, generisch
+[Eventlistener] verarbeitet Events, enthält Großteil der Logik
 
 
 Betrachten wir dies am Beispiel der externen Transaktionen:
 
-[caption=Ausschnitt aus AccountController, in dem Event veröffentlicht wird,label=lst_evpub]
+[caption=Ausschnitt aus dem AccountController, in dem ein Event veröffentlicht wird,label=lst_evpub, float]
 @PostMapping(path = "/id/transactions")
 public Transaction addTransaction(@RequestBody Transaction transaction, @PathVariable int id) 
     Account acc = accountRepository.findById(id)
@@ -283,12 +320,12 @@ public Transaction addTransaction(@RequestBody Transaction transaction, @PathVar
     return transaction;
 
 
-Listing  zeigt einen Teil des AccountControllers. Wird im
+Listing  zeigt einen Teil des AccountController. Wird im
 Frontend befohlen einem Mitglied Geld zum Konto hinzuzufügen, schickt dieses
 das entstehende Transaktionsobjekt und die Id des betroffenen Kontos. Daraufhin
 wird ein Event veröffentlichlicht.
 
-Dieses Event wird im Eventlistener verarbeitet:
+Dieses Event wird im Eventlistener verarbeitet (Listing ).
 
 [caption=Eventlistener für externe Transaktionen,label=lst_TEL]
 @EventListener
@@ -344,7 +381,7 @@ In einigen Fällen sollen Mails an Mitglieder des Vereins geschickt werden. Dies
 geschieht wieder per Events. Es gibt ein EmailNotificationEvent und
 einen dazugehörigen Eventlistener. Versendet wird die Mail durch eine vom
 Spring-Framework bereitgestellte Mail-Sender-Klasse. Das HTML, was den
-Mailinhalt ausmacht wird vorher mit der Templating-Engine Thymeleaf
+Mailinhalt ausmacht, wird vorher mit der Templating-Engine Thymeleaf
 generiert. Diese hätte theoretisch auch genutzt werden können, um HTML für die
 Vereinswebseite zu generieren. Dann gäbe es kein separates Frontend sondern das
 Backend würde das HTML dynamisch generieren.
@@ -379,7 +416,7 @@ geschehen soll.
 
 Da das Backend per HTTP mit dem Frontend kommuniziert, müssen Fehler über
 dieses Protokoll ans Frontend vermittelt werden. Dazu gibt es unter anderem die
-HTTP-Statuscodes, von denen die 404 - Not found wohl am
+HTTP-Statuscodes, von denen der Code 404 - Not found wohl am
 bekanntesten ist. Der ControllerAdvice nimmt nun den relevanten Text aus den
 Exceptions und sendet ihn mit dem passenden HTTP-Statuscode ans Frontend
 zurück. Listing  zeigt den Teil des ControllerAdvice, in dem die
@@ -407,16 +444,17 @@ Frontend ans Backend authentifiziert werden. Es gibt für die Sicherung von
 REST-Services verschiedene Möglichkeiten, zum Beispiel JSON Web Tokens
 (JWT), welches eine in der Praxis weit verbreitete Methode ist.
 
-Es wurde sich jedoch gegen ein komplexeres Verfahren entschieden sondern
-die Authentifizierung so simpel wie gerade noch sicher gestaltet. Als
-Authentifizierungsmethode wird die HTTP-Basic-Authentifizierung genutzt,
-bei der Nutzername und Passwort Base64-kodiert, also fast im Klartext, mit
-jeder Request im Authentifizierungsheader der Request übertragen werden. Diese
-Methode ist nur sicher, solange mit dem Server über HTTPS kommuniziert wird,
-damit ein Dritter nicht einfach die Zugangsdaten ablauschen kann. Der Server,
-auf dem die Applikation über den Verlauf des Projekts gehostet wurde, hat das
-für HTTPS nötige TLS-Zertifikat und erlaubt nur Kommunikation über HTTPS, daher
-ist die Methode als sicher anzusehen.
+Es wurde sich jedoch gegen ein komplexeres Verfahren entschieden.
+Stattdessen wurde die  die Authentifizierung so simpel wie gerade noch sicher
+gestaltet. Als Authentifizierungsmethode wird die
+HTTP-Basic-Authentifizierung genutzt, bei der Nutzername und Passwort
+Base64-kodiert, also fast im Klartext, mit jeder Request im
+Authentifizierungsheader der Request übertragen werden. Diese Methode ist nur
+sicher, solange mit dem Server über HTTPS kommuniziert wird, damit ein Dritter
+nicht einfach die Zugangsdaten abhören kann, wenn er den Netzwerkverkehr überwacht. Der Server, auf dem die
+Applikation über den Verlauf des Projekts gehostet wurde, hat das für HTTPS
+nötige TLS-Zertifikat und erlaubt nur Kommunikation über HTTPS, daher ist die
+Methode als sicher anzusehen.
 
 Die Implementierung der Authentifizierung erfolgte mittels Spring
 Security. Hier wird wieder viel abstrahiert. Spring Security stellt das
@@ -426,16 +464,16 @@ Implementierungsdetails verbirgt. Im Projekt wird nur eine Methode
 abhängig vom Username lädt.
 
 In einer zentralen Konfigurations-Klasse ist dann definiert, dass alle Requests
-authorisiert sein müssen und dass BCrypt zum hashen der Passwörter verwendet
+authorisiert sein müssen und dass der Algorithmus BCrypt zum hashen der Passwörter verwendet
 wird.
 
 Authorisierung
 
 Bei der Authorisierung wird ebenfalls viel von Spring Security erledigt. Es
 wird eine Methode überschrieben, die definiert, wie die Rollen, die ein
-Mitglied hat. Listing  zeigt einen Ausschnitt der Methode, bei
-der anhand der Offices (Ämter) des Mitglieds die Berechtigungen (Rollen)
-bestimmt werden.
+Mitglied hat, ermittelt werden. Listing  zeigt einen Ausschnitt
+der Methode, bei der anhand der Offices (Ämter) des Mitglieds die
+Berechtigungen (Rollen) bestimmt werden.
 
 [caption=Bestimmung der Rollen anhand der Ämter, label=lst_autho]
 Collection<SimpleGrantedAuthority> authorities = getOffices()
@@ -444,15 +482,18 @@ Collection<SimpleGrantedAuthority> authorities = getOffices()
         .collect(Collectors.toList());
 
 In den Controllern wird dann geprüft, ob ein Mitglied die benötigten Rechte
-hat. In Listing  wird geprüft, ob das Mitglied ein aktives
+für den Aufruf der Route hat. In Listing  wird geprüft, ob das Mitglied ein aktives
 Mitglied ist (hasRole('ACTIVE') und ob es auch sein eigenes Logbuch
-bearbeitet (#memberId ist der Parameter in der Request, der angibt,
+bearbeitet. #memberId ist der Parameter in der Request, der angibt,
 wessen Logbuch bearbeitet werden soll, principal.id ist die Id des
-Mitglieds, welches die Request durchführt.
+Mitglieds, welches die Request durchführt. Diese Bedingungen werden in der
+@PreAuthorize-Annotation oberhalb der Methodendefinition für die zu
+schützende Route angegeben.
 
 [caption=Beispiel Berechtigungsprüfung, label=lst_autho_meth]
 @PreAuthorize("hasRole('ACTIVE') and #memberId == principal.id")
 @PostMapping(path = "/memberId/pilotlogentry")
+public PilotLogEntry addPilotLogEntry(@RequestBody PilotLogEntry pilotLogEntry, @PathVariable int memberId)  ... 
 
 Unit-Testing
 
@@ -466,7 +507,7 @@ Es soll möglich sein, zu speichern, dass ein Mitglied im aktuellen Jahr als
 Fluglehrer tätig war. Es soll aber nicht möglich sein, dies noch ein zweites
 mal für das selbe Jahr zu speichern.
 
-Mit dem mockMvc werden die Requests durchgeführt und es wird
+Mit dem mockMvc werden Requests durchgeführt und es wird
 geprüft, dass der richtige HTTP-Statuscode zurückgegeben wird. Beim ersten Mal
 wird ein erfolgreiches Speichern erwartet, welches durch den Code
 204 - No Content symbolisiert wird. Bei der zweiten Anfrage wird
@@ -474,7 +515,7 @@ erwartet, dass das Backend die fehlerhafte Anfrage vom Client mit dem
 Statuscode 400 - Bad Request abweist.
 
 
-[caption=Beispielhafter Unit-Test, label=lst_test]
+[caption=Beispielhafter Unit-Test, label=lst_test, float]
 @Test
 @WithMockUser(roles = "SYSTEMADMINISTRATOR")
 public void testJaehrlicherServiceDoppelt() throws Exception 
@@ -504,15 +545,15 @@ der eigentliche Applikation, stattdessen musste diese Marshalling-Methode
 implementiert werden.
 
 Besonders nervig war, dass Datums-Objekte explizit definierte
-Serializier-Klassen benötigten. Diese geben z. B. an, dass ein Datumsobjekt in
-das Format YYYY-MM-DD hh:mm:ss umgewandelt werden soll. Dies war
+Serialisierungs-Klassen benötigten. Diese geben z. B. an, dass ein Datumsobjekt
+in das Format YYYY-MM-DD hh:mm:ss umgewandelt werden soll. Dies war
 relativ Aufwändig, hat aber auf der anderen Seite Einblicke in die
 Funktionsweise der Jackson-Bibliothek, die Spring für JSON-Serialisierung
 nutzt, gegeben.
 
 Tooling
 
-Neben der Werk - dem Quellcode - sei auch ein Blick auf die
+Neben dem Werk, dem Quellcode, sei auch ein Blick auf die
 Werkzeuge geworfen. Im Folgenden soll kurz beschrieben werden, welche
 Entwicklungs- und Kollaborationstools hilfreich waren und welche Rolle diese
 spielten.
@@ -559,8 +600,8 @@ Discord
 
 Discord wurde als zentrale Chat-Plattform genutzt, zum einen, da es die
 Möglichkeit gibt, auf einem Server verschiedene Räume für verschiedene Gruppen
-zu gestalten und zum anderen, weil einige Teilnehmer Discord bereits beim
-Gaming verwenden.
+zu gestalten und zum anderen, weil einige Teilnehmer Discord bereits privat  
+verwenden.
 
 Die Kommunikation über Discord ist insgesamt als positiv zu bewerten, auch wenn
 einige Teilnehmer schlecht erreichbar waren oder manche Nachrichten überlesen
@@ -584,8 +625,8 @@ Bei der Datenbank für die lokale Entwicklung gab es verschiedene Ansätze.
 Einige Entwickler haben die von Spring automatisch konfigurierte H2-Datenbank
 genutzt, die den geringsten (keinen) Einrichtungsaufwand hat. Die Entwickler
 mit etwas größerem Interesse an den Ereignissen innerhalb der Datenbank nutzten
-lokale MySQL-Instanzen, auf die per HeidiSQL, DBeaver oder per Kommandozeile
-zugegriffen wurde.
+lokale MySQL/MariaDB-Instanzen, auf die per HeidiSQL, DBeaver oder per
+Kommandozeile zugegriffen wurde.
 
 REST-Client
 
