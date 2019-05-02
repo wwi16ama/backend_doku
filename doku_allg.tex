@@ -135,7 +135,7 @@ verschiedenen Webseiten, die eine monolithische Applikation generiert.
     \label{tab:pro_contra}
 \end{table}
 
-Es wurde die Ansätze abgewogen (vgl. Tabelle \ref{tab:pro_contra}) und sich
+Es wurden die Ansätze abgewogen (vgl. Tabelle \ref{tab:pro_contra}) und sich
 gegen den monolithischen Ansatz entschieden. Daraus resultierte nun endgültig
 die Teilung in \emph{Frontend} und \emph{Backend} (und \emph{Marketing}).
 
@@ -251,20 +251,21 @@ Minute, ob es Änderungen auf dem Haupt- und Testzweig der Git-Repositories von
 Frontend und Backend gibt. Wird eine Änderung gefunden, lädt Jenkins den
 neuesten Quellcode, \emph{baut} eine lauffähige Anwendung \emph{(kompilieren,
 durchführen von Unit-Tests, verpacken zu bereitstellbaren Dateien)} und liefert
-diese dann an den jeweiligen Server. Dass Backend läuft auf einem
-\emph{Tomcat}-Applikationsserver, dass Frontend wird von einem
+diese dann an den jeweiligen Server. Das Backend läuft auf einem
+\emph{Tomcat}-Applikationsserver, das Frontend wird von einem
 \emph{nginx}-Webserver. Es laufen zwei Instanzen der App, \emph{Test} und \emph{Master}.
 
 %% Der Pi
 Für das fünfte Semester wurde als Server ein \emph{Raspberry Pi}-Bastelcomputer
 mit Linux-Betriebssystem genutzt. Der \emph{Pi} hat einen relativ schwachen
 Prozessor und kleinen Arbeitsspeicher, was dazu führte, dass es nicht möglich
-war, dass Frontend auf dem \emph{Pi} zu bauen, da dieser dabei abstürzte. Es
-wurde stattdessen das Frontend bereits gebaut \emph{händisch} bereitgestellt.
+war, das Frontend auf dem \emph{Pi} zu bauen, da dieser dabei abstürzte. Es
+wurde stattdessen das Frontend auf einem anderen Computer gebaut und dann
+\emph{händisch} auf den \emph{Pi} kopiert.
 
 %% Die Büchse
 Zu Beginn des sechsten Semesters wurde der von Prof. Dr. Engel bereitgestellte
 Server in Betrieb genommen, der deutlich leistungsfähiger ist. Dadurch war es
-nun auch möglich, dass Frontend komplett automatisiert bereitzustellen. 
+nun auch möglich, das Frontend komplett automatisiert bereitzustellen. 
 
 \end{document}
